@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Explainer</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github.min.css"
+      media="(prefers-color-scheme: light)"
+    />
+    <script type="importmap">
+      {
+        "imports": {
+          "marked": "https://cdn.jsdelivr.net/npm/marked@15.0.7/+esm",
+          "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.2.5/+esm",
+          "highlight.js": "https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/+esm"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="layout layout-explain">
+      <main class="app app-explain">
+        <nav class="site-nav" aria-label="App sections">
+          <a href="/" class="site-nav-link">Quick Ask</a>
+          <a href="/explain.html" class="site-nav-link active" aria-current="page"
+            >Code Explainer</a
+          >
+        </nav>
+
+        <header>
+          <h1>Code Explainer</h1>
+          <p class="subtitle">
+            Paste any code. Get plain-language sections you can listen to—built for
+            designers, not developers.
+          </p>
+        </header>
+
+        <form id="explain-form" class="ask-form">
+          <label for="code-input">Your code</label>
+          <textarea
+            id="code-input"
+            name="code"
+            rows="12"
+            placeholder="Paste code, config, or API examples here…"
+            spellcheck="false"
+            required
+          ></textarea>
+          <div class="explain-meta">
+            <span id="detected-lang" class="lang-pill lang-pill-muted" hidden></span>
+          </div>
+          <div class="actions">
+            <button type="submit" id="explain-btn">Explain</button>
+            <span id="status" class="status" aria-live="polite"></span>
+          </div>
+        </form>
+
+        <ol id="progress-steps" class="progress-steps" aria-label="Progress">
+          <li data-step="detect" class="progress-step">Detecting language</li>
+          <li data-step="plan" class="progress-step">Planning sections</li>
+          <li data-step="explain" class="progress-step">Writing explanations</li>
+        </ol>
+
+        <details id="behind-scenes" class="behind-scenes" hidden>
+          <summary>Behind the scenes</summary>
+          <div id="behind-content" class="behind-content"></div>
+        </details>
+
+        <section
+          id="results"
+          class="explain-results empty"
+          aria-labelledby="results-heading"
+          hidden
+        >
+          <div class="explain-results-header">
+            <h2 id="results-heading">Your guide</h2>
+            <span id="result-lang" class="lang-pill"></span>
+          </div>
+
+          <details class="explain-full-code">
+            <summary>Full formatted code</summary>
+            <pre><code id="full-code-block" class="hljs"></code></pre>
+          </details>
+
+          <div id="sections" class="explain-sections"></div>
+
+          <section id="concepts-panel" class="concepts-panel" hidden>
+            <h3 class="concepts-heading">New concepts</h3>
+            <ol id="concepts-list" class="concepts-list"></ol>
+          </section>
+        </section>
+      </main>
+    </div>
+    <script src="/explain.js" type="module"></script>
+  </body>
+</html>
