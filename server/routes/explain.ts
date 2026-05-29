@@ -2,7 +2,12 @@ import { Router } from "express";
 import { Agent } from "@cursor/sdk";
 import { DEFAULT_MODEL, MAX_EXPLAIN_CHARS } from "../config.js";
 import { explainPrompt, followUpPrompt, planPrompt } from "../explain/prompts.js";
-import { isExplainShape, isPlanShape } from "../explain/validate.js";
+import {
+  isExplainShape,
+  isPlanShape,
+  normalizePlanShape,
+} from "../explain/validate.js";
+import { resolveAssistantText } from "../lib/run-text.js";
 import { requireApiKey } from "../lib/api-key.js";
 import {
   consumeToolCallStream,
@@ -49,8 +54,9 @@ export function createExplainRouter(): Router {
 
       let planAnswer = "";
 
+      // Use agent mode: plan mode emits a Cursor implementation plan, not the JSON we need.
       const planRun = await agent.send(planPrompt(trimmed), {
-        mode: "plan",
+        mode: "agent",
         onDelta: createOnDeltaHandler(res, {
           phase: "planning",
           onAnswerText: (text) => {
@@ -70,8 +76,36 @@ export function createExplainRouter(): Router {
         return;
       }
 
-      const planText = planAnswer.trim() || (planResult.result ?? "").trim();
-      const planParsed = extractJsonFromText(planText);
+      let planText = await resolveAssistantText(planRun, planAnswer, planResult);
+      let planParsed = normalizePlanShape(extractJsonFromText(planText));
+
+      if (!isPlanShape(planParsed)) {
+        let repairAnswer = "";
+
+        const repairRun = await agent.send(
+          `Your previous reply was not valid JSON for the section plan schema. Reply with ONLY one JSON object (no markdown fences, no commentary) with language, languageLabel, formattedCode, and sections[]. Use the same analysis as before.`,
+          {
+            mode: "agent",
+            onDelta: createOnDeltaHandler(res, {
+              phase: "planning",
+              onAnswerText: (text) => {
+                repairAnswer += text;
+              },
+            }),
+          },
+        );
+
+        const repairResult = await waitForRun(
+          repairRun,
+          consumeToolCallStream(repairRun, res, "planning"),
+        );
+
+        if (repairResult.status !== "error") {
+          planText = await resolveAssistantText(repairRun, repairAnswer, repairResult);
+          planParsed = normalizePlanShape(extractJsonFromText(planText));
+        }
+      }
+
       if (!isPlanShape(planParsed)) {
         writeSse(res, {
           type: "error",
@@ -114,7 +148,11 @@ export function createExplainRouter(): Router {
         return;
       }
 
-      const explainText = explainAnswer.trim() || (explainResult.result ?? "").trim();
+      const explainText = await resolveAssistantText(
+        explainRun,
+        explainAnswer,
+        explainResult,
+      );
       const explainParsed = extractJsonFromText(explainText);
       if (!isExplainShape(explainParsed)) {
         writeSse(res, {
