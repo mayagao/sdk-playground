@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SDK Quick Ask</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "marked": "https://cdn.jsdelivr.net/npm/marked@15.0.7/+esm",
+          "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.2.5/+esm"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="history" aria-label="Past chats">
+        <div class="history-header">
+          <h2 class="history-title">History</h2>
+          <button type="button" id="new-chat" class="btn-ghost">New</button>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+        <p id="history-empty" class="history-empty">No saved chats yet.</p>
+      </aside>
+
+      <main class="app">
+        <header>
+          <h1>Quick Ask</h1>
+          <p class="subtitle">Local Cursor agent against this repo</p>
+        </header>
+
+        <form id="ask-form" class="ask-form">
+          <label for="prompt">Question</label>
+          <textarea
+            id="prompt"
+            name="prompt"
+            rows="3"
+            placeholder="e.g. What does this repository do?"
+            required
+          ></textarea>
+          <div class="actions">
+            <button type="submit" id="submit-btn">Ask</button>
+            <span id="status" class="status" aria-live="polite"></span>
+          </div>
+        </form>
+
+        <section class="output-panel" aria-labelledby="answer-heading">
+          <h2 id="answer-heading">Answer</h2>
+          <div id="answer" class="answer-timeline empty">
+            Ask something to get started.
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
