@@ -27,6 +27,15 @@
   </head>
   <body>
     <div class="layout layout-explain">
+      <aside class="history" aria-label="Past explanations">
+        <div class="history-header">
+          <h2 class="history-title">History</h2>
+          <button type="button" id="new-explain" class="btn-ghost">New</button>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+        <p id="history-empty" class="history-empty">No saved explanations yet.</p>
+      </aside>
+
       <main class="app app-explain">
         <nav class="site-nav" aria-label="App sections">
           <a href="/" class="site-nav-link">Quick Ask</a>
@@ -62,23 +71,24 @@
           </div>
         </form>
 
-        <ol id="progress-steps" class="progress-steps" aria-label="Progress">
-          <li data-step="detect" class="progress-step">Detecting language</li>
-          <li data-step="plan" class="progress-step">Planning sections</li>
-          <li data-step="explain" class="progress-step">Writing explanations</li>
-        </ol>
+        <div class="explain-workspace">
+          <ol id="progress-steps" class="progress-steps" aria-label="Progress">
+            <li data-step="detect" class="progress-step">Detecting language</li>
+            <li data-step="plan" class="progress-step">Planning sections</li>
+            <li data-step="explain" class="progress-step">Writing explanations</li>
+          </ol>
 
-        <details id="behind-scenes" class="behind-scenes" hidden>
-          <summary>Behind the scenes</summary>
-          <div id="behind-content" class="behind-content"></div>
-        </details>
+          <details id="behind-scenes" class="behind-scenes" hidden>
+            <summary>Behind the scenes</summary>
+            <div id="behind-content" class="behind-content"></div>
+          </details>
 
-        <section
-          id="results"
-          class="explain-results empty"
-          aria-labelledby="results-heading"
-          hidden
-        >
+          <section
+            id="results"
+            class="explain-results empty"
+            aria-labelledby="results-heading"
+            hidden
+          >
           <div class="explain-results-header">
             <h2 id="results-heading">Your guide</h2>
             <span id="result-lang" class="lang-pill"></span>
@@ -95,7 +105,8 @@
             <h3 class="concepts-heading">New concepts</h3>
             <ol id="concepts-list" class="concepts-list"></ol>
           </section>
-        </section>
+          </section>
+        </div>
       </main>
     </div>
     <script src="/explain.js" type="module"></script>

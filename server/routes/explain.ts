@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { Agent } from "@cursor/sdk";
 import { DEFAULT_MODEL, MAX_EXPLAIN_CHARS } from "../config.js";
-import { explainPrompt, planPrompt } from "../explain/prompts.js";
+import { explainPrompt, followUpPrompt, planPrompt } from "../explain/prompts.js";
 import { isExplainShape, isPlanShape } from "../explain/validate.js";
 import { requireApiKey } from "../lib/api-key.js";
 import {
@@ -126,7 +126,80 @@ export function createExplainRouter(): Router {
         return;
       }
 
-      writeSse(res, { type: "result", data: explainParsed });
+      const enriched = { ...explainParsed, agentId: agent.agentId };
+      writeSse(res, { type: "result", data: enriched });
+      res.end();
+    } catch (err) {
+      if (res.headersSent) {
+        sendSseAgentError(res, err);
+        return;
+      }
+      if (sendJsonAgentError(res, err)) return;
+      sendJsonServerError(res, err);
+    }
+  });
+
+  // POST /api/explain/:agentId/followup — follow-up run on an existing cloud agent.
+  // Maps to the SDK's Agent.resume(...) + agent.send(...) which the API doc lists as
+  // "Create A Run" (POST /v1/agents/{id}/runs).
+  router.post("/:agentId/followup", async (req, res) => {
+    const agentId = req.params.agentId?.trim();
+    const question =
+      typeof req.body?.question === "string" ? req.body.question.trim() : "";
+    const sectionTitle =
+      typeof req.body?.sectionTitle === "string" ? req.body.sectionTitle : undefined;
+    const sectionCode =
+      typeof req.body?.sectionCode === "string" ? req.body.sectionCode : undefined;
+    const startLine =
+      typeof req.body?.startLine === "number" ? req.body.startLine : undefined;
+    const endLine =
+      typeof req.body?.endLine === "number" ? req.body.endLine : undefined;
+
+    if (!agentId || !agentId.startsWith("bc-")) {
+      res.status(400).json({ error: "Valid cloud agent id is required" });
+      return;
+    }
+    if (!question) {
+      res.status(400).json({ error: "Question is required" });
+      return;
+    }
+    if (!wantsEventStream(req.headers.accept)) {
+      res.status(406).json({ error: "Accept: text/event-stream required" });
+      return;
+    }
+
+    try {
+      const apiKey = requireApiKey();
+      initSse(res);
+
+      await using agent = await Agent.resume(agentId, { apiKey });
+
+      let answerText = "";
+
+      const run = await agent.send(
+        followUpPrompt({ question, sectionTitle, sectionCode, startLine, endLine }),
+        {
+          mode: "agent",
+          onDelta: createOnDeltaHandler(res, {
+            onAnswerText: (text) => {
+              answerText += text;
+            },
+          }),
+        },
+      );
+
+      const result = await waitForRun(run, consumeToolCallStream(run, res));
+
+      if (result.status === "error") {
+        writeSse(res, { type: "error", message: "Follow-up run failed", runId: result.id });
+        res.end();
+        return;
+      }
+
+      writeSse(res, {
+        type: "done",
+        text: answerText.trim() || (result.result ?? ""),
+      });
       res.end();
     } catch (err) {
       if (res.headersSent) {
